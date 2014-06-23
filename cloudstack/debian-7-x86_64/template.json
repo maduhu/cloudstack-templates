@@ -35,6 +35,11 @@
       "destination": "/tmp/cloud.cfg"
     },
     {
+      "type": "file",
+      "source": "../../files/debian/cloud-set-guest-password.sh",
+      "destination": "/tmp/cloud-set-guest-password.sh"
+    },
+    {
       "type": "shell",
       "scripts": [
         "../../scripts/cloudstack-debian.sh",

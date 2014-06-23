@@ -11,17 +11,14 @@ debconf-set-selections <<< "libssl1.0.0:amd64 libssl1.0.0/restart-services strin
 debconf-set-selections <<< "libssl1.0.0 libssl1.0.0/restart-failed error"
 debconf-set-selections <<< "libssl1.0.0:amd64 libssl1.0.0/restart-failed error"
 
-echo 'deb http://ftp.uk.debian.org/debian wheezy-backports main' >> /etc/apt/sources.list
-
-# Remove isc-dhcp-client as it does not work properly with this right now,
-# it will be replaced with pump for the time being
 $apt update
 $apt install cloud-utils cloud-init cloud-initramfs-growroot bash-completion
 
-# use our specific config
 mv -f /tmp/cloud.cfg /etc/cloud/cloud.cfg
-# remove distro installed package to ensure Cloudstack is only enabled
-rm -f /etc/cloud/cloud.cfg.d/90_*
+
+mv -f /tmp/cloud-set-guest-password /etc/init.d/cloud-set-guest-password
+chmod 755 /etc/init.d/cloud-set-guest-password
+insserv cloud-set-guest-password
 
 $apt install sudo rsync curl less
 
