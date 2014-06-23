@@ -16,8 +16,7 @@ echo 'deb http://ftp.uk.debian.org/debian wheezy-backports main' >> /etc/apt/sou
 # Remove isc-dhcp-client as it does not work properly with this right now,
 # it will be replaced with pump for the time being
 $apt update
-$apt remove isc-dhcp-client
-$apt install pump cloud-utils cloud-init cloud-initramfs-growroot bash-completion
+$apt install cloud-utils cloud-init cloud-initramfs-growroot bash-completion
 
 # use our specific config
 mv -f /tmp/cloud.cfg /etc/cloud/cloud.cfg
