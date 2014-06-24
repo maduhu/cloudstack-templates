@@ -12,13 +12,14 @@ debconf-set-selections <<< "libssl1.0.0 libssl1.0.0/restart-failed error"
 debconf-set-selections <<< "libssl1.0.0:amd64 libssl1.0.0/restart-failed error"
 
 $apt update
-$apt install cloud-utils cloud-init cloud-initramfs-growroot bash-completion
-
-mv -f /tmp/cloud.cfg /etc/cloud/cloud.cfg
 
 mv -f /tmp/cloud-set-guest-password.sh /etc/init.d/cloud-set-guest-password
 chmod 755 /etc/init.d/cloud-set-guest-password
 insserv cloud-set-guest-password
+
+$apt install cloud-utils cloud-init cloud-initramfs-growroot bash-completion
+
+mv -f /tmp/cloud.cfg /etc/cloud/cloud.cfg
 
 $apt install sudo rsync curl less
 
