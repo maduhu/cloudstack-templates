@@ -19,7 +19,7 @@ do
 	fi
 done
 
-password=$(wget -t 3 -T 20 -O - --header "DomU_Request: send_my_password" $DOMR_IP:8080)
+password=$(wget -t 3 -T 5 -O - --header "DomU_Request: send_my_password" $DOMR_IP:8080)
 
 if [ $? -ne 0 ]
 then
