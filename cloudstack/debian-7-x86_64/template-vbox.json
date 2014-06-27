@@ -19,7 +19,7 @@
       "ssh_wait_timeout": "10000s",
       "boot_wait": "10s",
       "boot_command": [
-        "<esc> auto url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed-debian-vbox.cfg keymap=us debian-installer/keymap=us<enter><wait>"
+        "<esc><wait> auto url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed-debian-vbox.cfg keymap=us debian-installer/keymap=us<enter><wait>"
       ]
     }
   ],
