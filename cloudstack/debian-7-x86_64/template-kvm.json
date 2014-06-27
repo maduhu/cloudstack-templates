@@ -21,7 +21,7 @@
       "net_device": "virtio-net",
       "disk_interface": "virtio",
       "boot_command": [
-        "<esc> auto url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed-debian-kvm.cfg keymap=us debian-installer/keymap=us<enter><wait>"
+        "<esc><wait><wait> auto url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed-debian-kvm.cfg keymap=us debian-installer/keymap=us<enter><wait>"
       ]
     }
   ],
