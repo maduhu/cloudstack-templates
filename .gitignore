@@ -6,3 +6,6 @@ output-*
 virtualbox
 vmware
 iso
+*.bz2
+*.zip
+*.raw
