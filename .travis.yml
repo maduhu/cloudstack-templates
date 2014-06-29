@@ -22,5 +22,5 @@ env:
   - secure: Np5YgvPpj1iET7fjP4CncnEelAtauZmkc6YjZ+BpDIAxEY6Xn4X+f1w9Qg4FozPg3PgILskn0y0prCHdWUL/qv083h/AYroTRV7dnYOKKT4NDzGjYsce9DL8xZFnM9MbpUP7G30FW+BWvKTumeFiat4bYN2fSOWKBQPkWdWtH6k=
 script:
 - echo "decrypt private"
-- for i in {0..14}; do echo "ssh_key_$i\n"; done
-- for i in {0..14}; do echo "$ssh_key_$i\n"; done
+- for i in {0..14}; do echo "ssh_key_$i"; done
+- for i in {0..14}; do eval (echo "\$ssh_key_$i"); done
