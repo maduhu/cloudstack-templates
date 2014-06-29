@@ -9,3 +9,6 @@ iso
 *.bz2
 *.zip
 *.raw
+*.vhd
+*.vmdk
+*.qcow2
