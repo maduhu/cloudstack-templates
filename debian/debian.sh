@@ -310,7 +310,7 @@ grub-install ${LOOP_ROOT} --root-directory=${MOUNT_DIR} --modules="biosdisk part
 
 cat ${MOUNT_DIR}/boot/grub/grub.cfg
 
-#sed -i -e "s,/dev/mapper/${LOOP_DEVICE},/dev/sda1,g" ${MOUNT_DIR}/boot/grub/grub.cfg
+sed -i -e "s,/dev/mapper/${LOOP_DEVICE},UUID=${sda_uuid},g" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "s,set root=(.*),set root='(hd0\,1)',g" ${MOUNT_DIR}/boot/grub/grub.cfg
 #sed -i -e "/search/d" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "/loop/d" ${MOUNT_DIR}/boot/grub/grub.cfg
