@@ -23,4 +23,4 @@ env:
 script:
 - echo "decrypt private"
 - for i in {0..14}; do echo "ssh_key_$i"; done
-- for i in {0..14}; do eval (echo "\$ssh_key_$i"); done
+- for i in {0..14}; do eval echo $(echo "\$ssh_key_$i"); done
