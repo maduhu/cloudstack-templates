@@ -297,10 +297,10 @@ cp cloud-set-guest-password.sh ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.sh
 chroot ${MOUNT_DIR} insserv cloud-set-guest-password.sh
 
+chroot ${MOUNT_DIR} locale-gen en_US.UTF-8
 
 cat >> ${MOUNT_DIR}/etc/inittab << EOF
-hvc0:2345:respawn:/sbin/getty 38400 hvc0
-xvc0:2345:respawn:/sbin/getty 38400 xvc0
+vc:2345:respawn:/sbin/getty 38400 hvc0
 EOF
 
 # Setting-up initramfs
