@@ -1,8 +1,6 @@
 language: python
 python:
 - '2.7'
-- '3.3'
-- pypy
 env:
   global:
   - secure: Vi17/sbFYFrcxqG2ymYzGsZywqMJlyLluHJHbP8As/eG/5FnevPyKzgWVTm663I9Ohu4VeTka4B0f6MnsLnZa2Kv0VUn6ZfNrZIPNoFZ6G8MQnIYVYyTTRvJiS1xy1OCfXNvfRsBJfqSn9oXTHhwre9py0E94oqwR5TTYPfN85Y=
@@ -32,8 +30,4 @@ env:
   - secure: "ehyii95pJ2Yc4cCwKAizwoHPFqF2amKa/FhgTzL3tsswMlYhDTDBn8+7pnevvqC8C924U6w9hTKX3UDaphgrPlMC6zCMETWViCvK3sgxh3FA3IVOO4IqXmyNIt+Luv6++QgyfvhvVNkwzKNaLdDaaWto1fBKvegoDdW4yCdOKxk="
   - secure: "JIf/fYWbsEUIDEzO/7Rrk+70fvXwNHe0mLBU66zQw6ULCuFpomvsX8jAlRoclpSgmEcqXztaaC2ycctUkA/ZdiezIT/mViczii/owd1g8OyOflz7GBDJCuqYwKzOBSsGLsDgITPgrierdVk53+uiOoas+x/Pb9CFuBI/BFfZd3A="
 script:
-  - echo "decrypt private"
-  - for i in {0..30}; do eval $(printf "echo \$id_rsa_%02d\n" $i) >> ~/.ssh/id_rsa_base64; done
-  - base64 --decode ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - cat ~/.ssh/id_rsa
+  - echo $api_url
