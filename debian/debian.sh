@@ -124,13 +124,13 @@ if [ -z "${SOURCE_LIST_MIRROR}" ] ; then
 	SOURCE_LIST_MIRROR=http://http.debian.net/debian
 fi
 if [ -z "${IMAGE_SIZE}" ] ; then
-	IMAGE_SIZE=1
+	IMAGE_SIZE=10
 fi
 if [ -z "${AUTOMATIC_RESIZE_SPACE}" ] ; then
 	AUTOMATIC_RESIZE_SPACE=50
 fi
 
-NEEDED_PACKAGES=sudo,adduser,extlinux,openssh-server,linux-image-amd64,euca2ools,file,kbd
+NEEDED_PACKAGES=sudo,grub-pc,locales,adduser,openssh-server,linux-image-amd64,euca2ools,file,kbd
 if [ "${RELEASE}" = "jessie" ] ; then
 	NEEDED_PACKAGES=${NEEDED_PACKAGES},cloud-init,cloud-utils,cloud-initramfs-growroot
 else
@@ -163,12 +163,14 @@ rm -f $AMI_NAME
 qemu-img create ${AMI_NAME} ${IMAGE_SIZE}G
 
 ${PARTED} -s ${AMI_NAME} mktable msdos
-${PARTED} -s -a optimal ${AMI_NAME} mkpart primary ext3 1Mi 100%
+${PARTED} -s -a optimal ${AMI_NAME} mkpart primary ext4 1Mi 100%
 ${PARTED} -s ${AMI_NAME} set 1 boot on
 install-mbr ${AMI_NAME}
 RESULT_KPARTX=`kpartx -asv ${AMI_NAME} 2>&1`
 
 if echo "${RESULT_KPARTX}" | grep "^add map" ; then
+	echo ${RESULT_KPARTX}
+        LOOP_ROOT=`echo ${RESULT_KPARTX} | cut -d" " -f8`
 	LOOP_DEVICE=`echo ${RESULT_KPARTX} | cut -d" " -f3`
 	echo "kpartx mounted using: ${LOOP_DEVICE}"
 else
@@ -176,7 +178,7 @@ else
 	exit 1
 fi
 
-mkfs.ext3 /dev/mapper/${LOOP_DEVICE}
+mkfs.ext4 /dev/mapper/${LOOP_DEVICE}
 
 # No fsck because of X days without checks
 tune2fs -i 0 /dev/mapper/${LOOP_DEVICE}
@@ -206,7 +208,7 @@ fi
 # Setup fstab
 echo "# /etc/fstab: static file system information.
 proc	/proc	proc	nodev,noexec,nosuid	0	0
-/dev/sda1	/	ext3	errors=remount-ro	0	1
+/dev/sda1	/	ext4	errors=remount-ro	0	1
 " > ${MOUNT_DIR}/etc/fstab
 chroot ${MOUNT_DIR} mount /proc || true
 
@@ -287,7 +289,6 @@ if [ "${RELEASE}" = "wheezy" ] ; then
 	chroot ${MOUNT_DIR} apt-get -t wheezy-backports install cloud-init cloud-utils cloud-initramfs-growroot -y
 fi
 
-# For OpenStack, we would like to use Ec2 and no other API
 rm ${MOUNT_DIR}/etc/cloud/cloud.cfg.d/90_*
 rm ${MOUNT_DIR}/etc/cloud/cloud.cfg
 cp cloud.cfg ${MOUNT_DIR}/etc/cloud/cloud.cfg
@@ -295,30 +296,30 @@ cp cloud-set-guest-password.sh ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.sh
 chroot ${MOUNT_DIR} insserv cloud-set-guest-password.sh
 
-# Needed to have automatic mounts of /dev/vdb
-echo "mount_default_fields: [~, ~, 'auto', 'defaults,nofail', '0', '2']" >> ${MOUNT_DIR}/etc/cloud/cloud.cfg
-echo "manage_etc_hosts: true" >>${MOUNT_DIR}/etc/cloud/cloud.cfg
+
+cat >> ${MOUNT_DIR}/etc/inittab << EOF
+hvc0:2345:respawn:/sbin/getty 38400 hvc0
+xvc0:2345:respawn:/sbin/getty 38400 xvc0
+EOF
 
 # Setting-up initramfs
 chroot ${MOUNT_DIR} update-initramfs -u
 
+grub-install ${LOOP_ROOT} --root-directory=${MOUNT_DIR} --modules="biosdisk part_msdos"
+
+cat ${MOUNT_DIR}/boot/grub/grub.cfg
+
+sed -i -e "s,/dev/mapper/${LOOP_DEVICE},/dev/sda1,g" ${MOUNT_DIR}/boot/grub/grub.cfg
+sed -i -e "s,set root=(.*),set root='(hd0\,1)',g" ${MOUNT_DIR}/boot/grub/grub.cfg
+sed -i -e "/search/d" ${MOUNT_DIR}/boot/grub/grub.cfg
+sed -i -e "/loop/d" ${MOUNT_DIR}/boot/grub/grub.cfg
+
+cat ${MOUNT_DIR}/boot/grub/grub.cfg
+
 chroot ${MOUNT_DIR} apt-get -y autoremove
 chroot ${MOUNT_DIR} apt-get -y clean
 
-KERNEL=`chroot ${MOUNT_DIR} find boot -name 'vmlinuz-*'`
-RAMDISK=`chroot ${MOUNT_DIR} find boot -name 'initrd.img-*'`
-UUID=`blkid -o value -s UUID /dev/mapper/${LOOP_DEVICE}`
-
-cat << EOF > ${MOUNT_DIR}/boot/extlinux/extlinux.conf
-default linux
-timeout 1
-label linux
-kernel ${KERNEL}
-append initrd=${RAMDISK} root=/dev/sda1 ro
-EOF
-
-cp ${MOUNT_DIR}/boot/extlinux/extlinux.conf ${MOUNT_DIR}/extlinux.conf
-extlinux --install ${MOUNT_DIR}
+sync;
 
 zerofree -v /dev/mapper/${LOOP_DEVICE}
 
@@ -338,6 +339,11 @@ fi
 chroot ${MOUNT_DIR} umount /proc || true
 umount ${MOUNT_DIR}
 
+#tune2fs -j /dev/mapper/${LOOP_DEVICE}
+fsck.ext3 -f /dev/mapper/${LOOP_DEVICE} || true
+
+sync;
+
 if [ "${AUTOMATIC_RESIZE}" = "yes" ] ; then
 	resize2fs -M /dev/mapper/${LOOP_DEVICE}
 	FS_BLOCKS=`tune2fs -l /dev/mapper/${LOOP_DEVICE} | awk '/Block count/{print $3}'`
@@ -354,7 +360,7 @@ rmdir ${MOUNT_DIR}
 if [ "${AUTOMATIC_RESIZE}" = "yes" ] ; then
 	# Rebuild a smaller partition table
 	parted -s ${AMI_NAME} rm 1
-	parted -s ${AMI_NAME} mkpart primary ext3 1Mi ${FINAL_IMG_SIZE}Mi
+	parted -s ${AMI_NAME} mkpart primary ext4 1Mi ${FINAL_IMG_SIZE}Mi
 	parted -s ${AMI_NAME} set 1 boot on
 
 	# Add 2M for the 1M at the beginning of the partition and some additionnal space 
