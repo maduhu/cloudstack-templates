@@ -206,9 +206,10 @@ fi
 ### Customize: misc stuff ###
 # # # # # # # # # # # # # # #
 # Setup fstab
+sda_uuid=`blkid -o value -s UUID /dev/mapper/${LOOP_DEVICE}`
 echo "# /etc/fstab: static file system information.
 proc	/proc	proc	nodev,noexec,nosuid	0	0
-/dev/sda1	/	ext4	errors=remount-ro	0	1
+UUID=${sda_uuid}	/	ext4	errors=remount-ro	0	1
 " > ${MOUNT_DIR}/etc/fstab
 chroot ${MOUNT_DIR} mount /proc || true
 
@@ -309,9 +310,9 @@ grub-install ${LOOP_ROOT} --root-directory=${MOUNT_DIR} --modules="biosdisk part
 
 cat ${MOUNT_DIR}/boot/grub/grub.cfg
 
-sed -i -e "s,/dev/mapper/${LOOP_DEVICE},/dev/sda1,g" ${MOUNT_DIR}/boot/grub/grub.cfg
+#sed -i -e "s,/dev/mapper/${LOOP_DEVICE},/dev/sda1,g" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "s,set root=(.*),set root='(hd0\,1)',g" ${MOUNT_DIR}/boot/grub/grub.cfg
-sed -i -e "/search/d" ${MOUNT_DIR}/boot/grub/grub.cfg
+#sed -i -e "/search/d" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "/loop/d" ${MOUNT_DIR}/boot/grub/grub.cfg
 
 cat ${MOUNT_DIR}/boot/grub/grub.cfg
