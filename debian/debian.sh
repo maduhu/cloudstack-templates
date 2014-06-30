@@ -11,10 +11,8 @@ Options are:
  --sources.list-mirror|-s <source-list-mirror> (default: http://http.debian.net/debian)
  --extra-packages|-e <package>,<package>,...
  --hook-script|-hs <hook-script>
- --image-size|-is <image-size> (default: 1G)
- --automatic-resize|-ar
- --automatic-resize-space|-ars <suplementary-space> (default: 50M)
- --password|-p <root-password> (dangerous option: avoid it if possible)
+ --image-size|-is <image-size> (default: 8G)
+ --password|-p <root-password>
 For more info: man $0"
 	exit 1
 }
@@ -42,19 +40,6 @@ for i in $@ ; do
 	;;
 	"--minimal"|"-m")
 		EXTRA=no
-		shift
-	;;
-	"--automatic-resize"|"-ar")
-		AUTOMATIC_RESIZE=yes
-		shift
-	;;
-	"--automatic-resize-space"|"-ars")
-		if [ -z "${2}" ] ; then
-			echo "No parameter defining the suplementary space"
-			usage
-		fi
-		AUTOMATIC_RESIZE_SPACE=${2}
-		shift
 		shift
 	;;
 	"--image-size"|"-is")
@@ -124,10 +109,7 @@ if [ -z "${SOURCE_LIST_MIRROR}" ] ; then
 	SOURCE_LIST_MIRROR=http://http.debian.net/debian
 fi
 if [ -z "${IMAGE_SIZE}" ] ; then
-	IMAGE_SIZE=10
-fi
-if [ -z "${AUTOMATIC_RESIZE_SPACE}" ] ; then
-	AUTOMATIC_RESIZE_SPACE=50
+	IMAGE_SIZE=8
 fi
 
 NEEDED_PACKAGES=sudo,grub-pc,locales,adduser,openssh-server,linux-image-amd64,euca2ools,file,kbd
@@ -297,7 +279,13 @@ cp cloud-set-guest-password.sh ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.sh
 chroot ${MOUNT_DIR} insserv cloud-set-guest-password.sh
 
+cp cloud-firstboot.sh ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
+chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
+chroot ${MOUNT_DIR} insserv cloud-firstboot.sh
+
 chroot ${MOUNT_DIR} locale-gen en_US.UTF-8
+
+sed -i 's/^#T0/T0/' ${MOUNT_DIR}/etc/inittab
 
 cat >> ${MOUNT_DIR}/etc/inittab << EOF
 vc:2345:respawn:/sbin/getty 38400 hvc0
@@ -310,9 +298,8 @@ grub-install ${LOOP_ROOT} --root-directory=${MOUNT_DIR} --modules="biosdisk part
 
 cat ${MOUNT_DIR}/boot/grub/grub.cfg
 
-sed -i -e "s,/dev/mapper/${LOOP_DEVICE},UUID=${sda_uuid},g" ${MOUNT_DIR}/boot/grub/grub.cfg
+sed -i -e "s,/dev/mapper/${LOOP_DEVICE},UUID=${sda_uuid} console=tty0 console=ttyS0,115200n8 console=hvc0,g" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "s,set root=(.*),set root='(hd0\,1)',g" ${MOUNT_DIR}/boot/grub/grub.cfg
-#sed -i -e "/search/d" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "/loop/d" ${MOUNT_DIR}/boot/grub/grub.cfg
 
 cat ${MOUNT_DIR}/boot/grub/grub.cfg
@@ -340,34 +327,8 @@ fi
 chroot ${MOUNT_DIR} umount /proc || true
 umount ${MOUNT_DIR}
 
-#tune2fs -j /dev/mapper/${LOOP_DEVICE}
-fsck.ext3 -f /dev/mapper/${LOOP_DEVICE} || true
-
-sync;
-
-if [ "${AUTOMATIC_RESIZE}" = "yes" ] ; then
-	resize2fs -M /dev/mapper/${LOOP_DEVICE}
-	FS_BLOCKS=`tune2fs -l /dev/mapper/${LOOP_DEVICE} | awk '/Block count/{print $3}'`
-	WANTED_SIZE=`expr $FS_BLOCKS '*' 4 '/' 1024 + ${AUTOMATIC_RESIZE_SPACE}` # Add ${AUTOMATIC_RESIZE_SPACE}M
-	resize2fs /dev/mapper/${LOOP_DEVICE} ${WANTED_SIZE}M
-
-	FINAL_FS_BLOCKS=`tune2fs -l /dev/mapper/${LOOP_DEVICE} | awk '/Block count/{print $3}'`
-	FINAL_IMG_SIZE=`expr '(' $FINAL_FS_BLOCKS + 258 ')' '*' 4 '/' 1024` # some blocks for mbr and multiple block size (4k)
-fi
-
 kpartx -d ${AMI_NAME}
 rmdir ${MOUNT_DIR}
-
-if [ "${AUTOMATIC_RESIZE}" = "yes" ] ; then
-	# Rebuild a smaller partition table
-	parted -s ${AMI_NAME} rm 1
-	parted -s ${AMI_NAME} mkpart primary ext4 1Mi ${FINAL_IMG_SIZE}Mi
-	parted -s ${AMI_NAME} set 1 boot on
-
-	# Add 2M for the 1M at the beginning of the partition and some additionnal space 
-	truncate -s `expr 3 + ${FINAL_IMG_SIZE}`M ${AMI_NAME}
-	install-mbr ${AMI_NAME}
-fi
 
 mkdir -p dist/
 rm -rf dist/* || true

@@ -1,45 +1,94 @@
-#!/bin/bash
+#!/bin/bash 
 #
-# Init file for Password Download Client
+# Init file for SSH Public Keys Download Client
 #
-# chkconfig: 345 98 02
-# description: Password Download Client
+### BEGIN INIT INFO
+# Provides:             cloud-set-guest-sshkey
+# Required-Start:       $local_fs $syslog $network
+# Required-Stop:        $local_fs $syslog $network
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    SSH Public Keys Download Client
+### END INIT INFO
+
+set -e
+
+. /lib/lsb/init-functions
 
 # Modify this line to specify the user (default is root)
 user=root
-# Add your DHCP lease file here
-DHCP_FILES="/var/lib/dhcp/dhclient.eth0.leases"
 
-for DHCP_FILE in $DHCP_FILES
-do
-	if [ -f $DHCP_FILE ]
-	then
-		DOMR_IP=$(grep dhcp-server-identifier $DHCP_FILE | tail -1 | awk '{print $NF}' | tr -d '\;')
-		break;
-	fi
-done
+# Add your DHCP lease folders here
+DHCP_FOLDERS="/var/lib/dhcp/*"
 
-password=$(wget -t 3 -T 5 -O - --header "DomU_Request: send_my_password" $DOMR_IP:8080)
+function cloud_set_guest_sshkey() {
 
-if [ $? -ne 0 ]
-then
-	exit 1
-fi
+    keys_received=0
+    file_count=0
 
-password=$(echo $password | tr -d '\r')
+    for DHCP_FILE in $DHCP_FOLDERS; do
+        if [ -f $DHCP_FILE ]; then
+            file_count=$((file_count+1))
+            SSHKEY_SERVER_IP=$(grep dhcp-server-identifier $DHCP_FILE | tail -1 | awk '{print $NF}' | tr -d '\;')
 
-if [ -n "$password" ] && [ "$password" != "bad_request" ] && [ "$password" != "saved_password" ]
-then
-	echo "$user:$password" | chpasswd
-	if [ $? -gt 0 ]
-	then
-		usermod -p `mkpasswd $password 42` $user
-		if [ $? -gt 0 ]
-		then
-			exit 1
-		fi
-	fi
-	wget -t 3 -T 20 -O - --header "DomU_Request: saved_password" $DOMR_IP:8080
-fi
+            if [ -n $SSHKEY_SERVER_IP ]; then
+                logger -t "cloud" "Sending request to ssh key server at $SSHKEY_SERVER_IP"
+
+                publickey=$(wget -t 3 -T 20 -O - http://$SSHKEY_SERVER_IP/latest/public-keys 2>/dev/null)
+
+                if [ $? -eq 0 ]; then
+                    logger -t "cloud" "Got response from server at $SSHKEY_SERVER_IP"
+                    keys_received=1
+                    break
+                fi
+            else
+                logger -t "cloud" "Could not find ssh key server IP in $DHCP_FILE"
+            fi
+        fi
+    done
+
+    # did we find the keys anywhere?
+    if [ "$keys_received" == "0" ]; then
+        logger -t "cloud" "Failed to get ssh keys from any server"
+        exit 1
+    fi
+
+    # set ssh public key
+    homedir=$(grep ^$user /etc/passwd|awk -F ":" '{print $6}')
+    sshdir=$homedir/.ssh
+    authorized=$sshdir/authorized_keys
+
+
+    if [ ! -e $sshdir ]; then
+        mkdir $sshdir
+    fi
+
+    if [ ! -e $authorized ]; then
+        touch $authorized
+    fi
+
+    #cat $authorized|grep -v "$publickey" > $authorized
+    #echo "$publickey" >> $authorized
+    #To support user copied ssh keys
+    if [ `grep -c "$publickey" $authorized` == 0 ]; then
+            echo "$publickey" >> $authorized
+    fi
+}
+
+case "$1" in
+  start)
+      log_action_msg "Starting cloud" "cloud-set-guest-sshkey"
+      sleep 10
+      cloud_set_guest_sshkey
+      ;;
+  stop)
+      log_action_msg "Stopping cloud" "cloud-set-guest-sshkey"
+      log_end_msg 0
+      ;;
+  *)
+      log_action_msg "Usage: /etc/init.d/cloud-set-guest-sshkey {start}"
+      exit 1
+      ;;
+esac
 
 exit 0
