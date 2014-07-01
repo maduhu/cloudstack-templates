@@ -16,15 +16,8 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/local/sbin
 do_start() {
   [ "$VERBOSE" != no ] && log_begin_msg "Running cloud-firstboot"
   (sleep 60 && update-rc.d -f cloud-firstboot remove) &
-  
-  [ ! -d /proc/xen ] && sed -i 's/^vc/#vc/' /etc/inittab && telinit q
-  [  -d /proc/xen ] && sed -i 's/^#vc/vc/' /etc/inittab && telinit q
-
-  [ ! -d /proc/xen ] && sed -i 's/^vc/#vc/' /etc/inittab && telinit q
-  [  -d /proc/xen ] && sed -i 's/^#vc/vc/' /etc/inittab && telinit q
 
   local hyp=$(hypervisor)
-
   case $hyp in
      xen-domU|xen-hvm)
           sed -i 's/^T0/#T0/' /etc/inittab && telinit q

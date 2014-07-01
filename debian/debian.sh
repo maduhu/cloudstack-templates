@@ -112,7 +112,7 @@ if [ -z "${IMAGE_SIZE}" ] ; then
 	IMAGE_SIZE=8
 fi
 
-NEEDED_PACKAGES=sudo,grub-pc,locales,adduser,openssh-server,linux-image-amd64,euca2ools,file,kbd
+NEEDED_PACKAGES=sudo,grub-pc,adduser,openssh-server,locales,linux-image-amd64,euca2ools,file,kbd
 if [ "${RELEASE}" = "jessie" ] ; then
 	NEEDED_PACKAGES=${NEEDED_PACKAGES},cloud-init,cloud-utils,cloud-initramfs-growroot
 else
@@ -213,6 +213,18 @@ fi" >>${MOUNT_DIR}/etc/bash.bashrc
 	sed -i "s#1:2345:respawn:/sbin/getty 38400 tty1#1:2345:respawn:/sbin/getty --noclear 38400 tty1#" ${MOUNT_DIR}/etc/inittab
 fi
 
+cat > ${MOUNT_DIR}/etc/environment <<EOF
+LANGUAGE="en_US:en"
+LANG="en_US.UTF-8"
+EOF
+
+
+export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true
+
+chroot ${MOUNT_DIR} locale-gen en_US.UTF-8
+chroot ${MOUNT_DIR} locale-gen en_GB.UTF-8
+chroot ${MOUNT_DIR} dpkg-reconfigure locales
+
 # Turn off console blanking which is *very* annoying
 # and increase KEYBOARD_DELAY because it can be annoying
 # over network.
@@ -283,8 +295,6 @@ cp cloud-firstboot.sh ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
 chroot ${MOUNT_DIR} insserv cloud-firstboot.sh
 
-chroot ${MOUNT_DIR} locale-gen en_US.UTF-8
-
 sed -i 's/^#T0/T0/' ${MOUNT_DIR}/etc/inittab
 
 cat >> ${MOUNT_DIR}/etc/inittab << EOF
@@ -298,7 +308,7 @@ grub-install ${LOOP_ROOT} --root-directory=${MOUNT_DIR} --modules="biosdisk part
 
 cat ${MOUNT_DIR}/boot/grub/grub.cfg
 
-sed -i -e "s,/dev/mapper/${LOOP_DEVICE},UUID=${sda_uuid} console=tty0 console=ttyS0,115200n8 console=hvc0,g" ${MOUNT_DIR}/boot/grub/grub.cfg
+sed -i -e "s,/dev/mapper/${LOOP_DEVICE},UUID=${sda_uuid} console=tty0 console=ttyS0\,115200n8 console=hvc0,g" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "s,set root=(.*),set root='(hd0\,1)',g" ${MOUNT_DIR}/boot/grub/grub.cfg
 sed -i -e "/loop/d" ${MOUNT_DIR}/boot/grub/grub.cfg
 
