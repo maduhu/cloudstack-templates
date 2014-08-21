@@ -345,7 +345,7 @@ rm -rf dist/* || true
 
 cd dist
 
-qemu-img convert -c -f raw ../${AMI_NAME} -O qcow2 ${FILE_NAME}-kvm.qcow2
+qemu-img convert -o compat=0.10 -c -f raw ../${AMI_NAME} -O qcow2 ${FILE_NAME}-kvm.qcow2
 bzip2 ${FILE_NAME}-kvm.qcow2
 
 qemu-img convert -f raw ../${AMI_NAME} -O vmdk ${FILE_NAME}-vmware.vmdk
