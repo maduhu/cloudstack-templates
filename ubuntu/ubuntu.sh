@@ -266,7 +266,9 @@ echo "debian.cloudstack.org" >${MOUNT_DIR}/etc/hostname
 
 # This should be a correct default everywhere
 echo "deb ${SOURCE_LIST_MIRROR} ${RELEASE} main
-deb-src ${SOURCE_LIST_MIRROR} ${RELEASE} main" >${MOUNT_DIR}/etc/apt/sources.list
+deb-src ${SOURCE_LIST_MIRROR} ${RELEASE} main
+deb ${SOURCE_LIST_MIRROR} ${RELEASE} universe
+deb-src ${SOURCE_LIST_MIRROR} ${RELEASE} universe" >${MOUNT_DIR}/etc/apt/sources.list
 
 if [ "${RELEASE}" = "precise" ] ; then
 	echo "deb ${SOURCE_LIST_MIRROR} precise-updates main
