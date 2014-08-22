@@ -112,7 +112,7 @@ if [ -z "${IMAGE_SIZE}" ] ; then
 	IMAGE_SIZE=8
 fi
 
-NEEDED_PACKAGES=sudo,grub-pc,adduser,openssh-server,locales,linux-image-server,euca2ools,file,kbd
+NEEDED_PACKAGES=sudo,grub,adduser,openssh-server,locales,linux-image-server,euca2ools,file,kbd
 if [ "${RELEASE}" = "trusty" ] ; then
 	NEEDED_PACKAGES=${NEEDED_PACKAGES}
 else
