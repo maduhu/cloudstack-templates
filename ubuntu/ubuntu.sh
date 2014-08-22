@@ -288,7 +288,7 @@ chroot ${MOUNT_DIR} /usr/lib/insserv/insserv cloud-set-guest-password.sh
 
 cp cloud-firstboot.sh ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
-chroot ${MOUNT_DIR} insserv cloud-firstboot.sh
+chroot ${MOUNT_DIR} /usr/lib/insserv/insserv cloud-firstboot.sh
 
 sed -i 's/^#T0/T0/' ${MOUNT_DIR}/etc/inittab
 
