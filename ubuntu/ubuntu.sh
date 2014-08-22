@@ -210,7 +210,7 @@ if ! shopt -oq posix; then
 fi" >>${MOUNT_DIR}/etc/bash.bashrc
 
 	# No clear for the tty1 console
-	sed -i "s#1:2345:respawn:/sbin/getty 38400 tty1#1:2345:respawn:/sbin/getty --noclear 38400 tty1#" ${MOUNT_DIR}/etc/inittab
+	sed -i "s#exec /sbin/getty -8 38400 tty1#exec /sbin/getty -8 --noclear 38400 tty1#" ${MOUNT_DIR}/etc/init/tty1.conf
 fi
 
 cat > ${MOUNT_DIR}/etc/environment <<EOF
