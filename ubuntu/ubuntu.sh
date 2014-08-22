@@ -290,10 +290,19 @@ cp cloud-firstboot.sh ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
 chroot ${MOUNT_DIR} /usr/lib/insserv/insserv cloud-firstboot.sh
 
-sed -i 's/^#T0/T0/' ${MOUNT_DIR}/etc/inittab
+#sed -i 's/^#T0/T0/' ${MOUNT_DIR}/etc/inittab
 
-cat >> ${MOUNT_DIR}/etc/inittab << EOF
-vc:2345:respawn:/sbin/getty 38400 hvc0
+cat > ${MOUNT_DIR}/etc/init/vc.conf << EOF
+# vc - getty
+start on stopped rc RUNLEVEL=[2345] and (
+            not-container or
+            container CONTAINER=lxc or
+            container CONTAINER=lxc-libvirt)
+
+stop on runlevel [!2345]
+
+respawn
+exec /sbin/getty -8 38400 hvc0
 EOF
 
 # Setting-up initramfs
