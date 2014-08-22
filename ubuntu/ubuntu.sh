@@ -278,13 +278,13 @@ deb ${SOURCE_LIST_MIRROR} precise-backports main
 fi
 chroot ${MOUNT_DIR} apt-get update
 chroot ${MOUNT_DIR} apt-get upgrade -y
-chroot ${MOUNT_DIR} apt-get -y install cloud-initramfs-growroot most joe cloud-init cloud-utils
+chroot ${MOUNT_DIR} apt-get -y install cloud-initramfs-growroot most joe cloud-init cloud-utils insserv man manpages
 rm ${MOUNT_DIR}/etc/cloud/cloud.cfg.d/90_*
 rm ${MOUNT_DIR}/etc/cloud/cloud.cfg
 cp cloud.cfg ${MOUNT_DIR}/etc/cloud/cloud.cfg
 cp cloud-set-guest-password.sh ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.sh
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-set-guest-password.sh
-chroot ${MOUNT_DIR} insserv cloud-set-guest-password.sh
+chroot ${MOUNT_DIR} /usr/lib/insserv/insserv cloud-set-guest-password.sh
 
 cp cloud-firstboot.sh ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
 chmod 755 ${MOUNT_DIR}/etc/init.d/cloud-firstboot.sh
